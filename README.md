@@ -5,6 +5,14 @@ Support for both switch and sensor options for remote server over ssh.
 
 This integration was made for the purposes of remote POE (Power Over Ethernet) control, and modification may be needed for it to work for other applications.
 
+## Installation
+### HACS Method
+Install the HACS add-on through the HASS add-on store.
+In the Integrations tab, press the 3 dots, and Custom repositories.
+Paste this into the link: `https://github.com/blaketenantwatson/ssh_integration`, and select intergration, and then add.
+You can now click on ssh integration in the Integrations tab, and then click download. Everything should now be setup.
+
+### Manual Method
 To get started clone this repository into `/config/`, so that the files are stored at:
 ```
 /config/custom_components/ssh/__init__.py
@@ -12,6 +20,11 @@ To get started clone this repository into `/config/`, so that the files are stor
 /config/custom_components/ssh/sensor.py
 /config/custom_components/ssh/manifest.json
 ```
+
+Restart, and the intergration should be setup. This method is less reliable than HACS, as HACS has some error checking for custom integrations that aren't done by HASS.
+
+
+
 ## Example Configurations
 **Switch**
 ```yaml
