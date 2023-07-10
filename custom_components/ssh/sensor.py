@@ -261,6 +261,7 @@ class SSHData:
             #       Because the scan interval is small, it will just fail to fetch once, and catch on the next cycle
             stdin, stdout, stderr = self._ssh.exec_command(self.command, self.timeout)
             
+            value = ''
             for line in stdout:
                 value = line.strip('\n')
 

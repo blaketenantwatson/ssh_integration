@@ -126,6 +126,7 @@ async def async_setup_platform(
 
     trigger_entity_config = {
         CONF_UNIQUE_ID: unique_id,
+        CONF_NAME: Template(name, hass),
     }
 
     async_add_entities(
