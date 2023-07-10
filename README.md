@@ -8,8 +8,11 @@ This integration was made for the purposes of remote POE (Power Over Ethernet) c
 ## Installation
 ### HACS Method
 Install the HACS add-on through the HASS add-on store.
+
 In the Integrations tab, press the 3 dots, and Custom repositories.
+
 Paste this into the link: `https://github.com/blaketenantwatson/ssh_integration`, and select intergration, and then add.
+
 You can now click on ssh integration in the Integrations tab, and then click download. Everything should now be setup.
 
 ### Manual Method
