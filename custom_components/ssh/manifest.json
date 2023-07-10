@@ -1,0 +1,9 @@
+{
+        "domain": "ssh",
+        "name": "ssh integration",
+        "documentation": "https://github.com/blaketenantwatson/ssh_integration",
+        "requirements": ["paramiko==3.1.0"],
+        "dependencies": [],
+        "codeowners": ["@blaketenantwatson"],
+        "version":"0.1.0"
+}
