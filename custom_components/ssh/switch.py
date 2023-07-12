@@ -21,11 +21,9 @@ from homeassistant.const import (
     CONF_COMMAND_ON,
     CONF_COMMAND_STATE,
     CONF_FRIENDLY_NAME,
-    CONF_ICON,
     CONF_ICON_TEMPLATE,
     CONF_NAME,
     CONF_SCAN_INTERVAL,
-    CONF_SWITCHES,
     CONF_UNIQUE_ID,
     CONF_VALUE_TEMPLATE,
     CONF_NAME,
@@ -41,7 +39,6 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
-from homeassistant.util import dt as dt_util, slugify
 from homeassistant.helpers.template_entity import TemplateEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -99,7 +96,6 @@ async def async_setup_platform(
     command_off: str = switch_config.get(CONF_COMMAND_OFF)
     command_on: str = switch_config.get(CONF_COMMAND_ON)
     command_state: str = switch_config.get(CONF_COMMAND_STATE)
-    friendly_name: str = switch_config.get(CONF_FRIENDLY_NAME)
     value_template: Template = switch_config.get(CONF_VALUE_TEMPLATE)
     if value_template:
         value_template.hass = hass
@@ -108,7 +104,7 @@ async def async_setup_platform(
     unique_id: str = switch_config.get(CONF_UNIQUE_ID)
     host: str = switch_config.get(CONF_HOST)
     port: int = switch_config.get(CONF_PORT)
-    name: str = switch_config.get(CONF_NAME)
+    name: str = switch_config.get(CONF_NAME) or switch_config.get(CONF_FRIENDLY_NAME)
     username: str = switch_config.get(CONF_USERNAME)
     key: str = switch_config.get(CONF_KEY)
     scan_interval: timedelta = switch_config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
@@ -122,6 +118,7 @@ async def async_setup_platform(
         host,
         username,
         key,
+        port,
     )
 
     trigger_entity_config = {
@@ -251,6 +248,7 @@ class SSHData:
         host: str,
         username: str,
         key: str,
+        port: int,
     ) -> None:
         self.value: str | None = None
         self.hass: HomeAssistant = hass
@@ -259,6 +257,7 @@ class SSHData:
         self._command_state: str = command_state
         self._host: str = host
         self._key: str = key
+        self._port: int = port
         self._ssh = None
         self._username: str = username
         self._timeout = command_timeout
@@ -274,7 +273,7 @@ class SSHData:
         try:
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(self._host, username=self._username, pkey=self._ssh_key)
+            client.connect(self._host, port=self._port, username=self._username, pkey=self._ssh_key)
             self._ssh = client
             self._connected = True
         except Exception as err:
