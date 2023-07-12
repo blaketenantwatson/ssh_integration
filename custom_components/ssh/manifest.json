@@ -1,9 +1,11 @@
 {
         "domain": "ssh",
-        "name": "ssh integration",
-        "documentation": "https://github.com/blaketenantwatson/ssh_integration",
-        "requirements": ["paramiko==3.1.0"],
-        "dependencies": [],
+        "name": "SSH Integration",
         "codeowners": ["@blaketenantwatson"],
-        "version":"0.1.0",
+        "dependencies": [],
+        "documentation": "https://github.com/blaketenantwatson/ssh_integration",
+        "integration_type": "hub",
+        "iot_class": "cloud_polling",
+        "requirements": ["paramiko==3.1.0"]
+        
 }
