@@ -37,6 +37,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue
+from homeassistant.exceptions import PlatformNotReady, AuthFailed, ConfigEntryAuthFailed, ConfigEntryNotReady
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -119,21 +120,29 @@ async def async_setup_platform(
         CONF_NAME: name,
         CONF_DEVICE_CLASS: sensor_config.get(CONF_DEVICE_CLASS),
     }
-
-    async_add_entities(
-        [
-            SSHSensor(
-                hass,
-                unique_id,
-                data,
-                trigger_entity_config,
-                unit,
-                state_class,
-                value_template,
-                scan_interval,
-            )
-        ]
-    )
+    
+    try:
+        async_add_entities(
+            [
+                SSHSensor(
+                    hass,
+                    unique_id,
+                    data,
+                    trigger_entity_config,
+                    unit,
+                    state_class,
+                    value_template,
+                    scan_interval,
+                )
+            ]
+        )
+    except ConnectionError as err:
+        raise PlatformNotReady(f"Connection error while connecting to {name}") from err
+    except AuthFailed as err:
+        raise ConfigEntryAuthFailed(f"Credentials invalid for {name}") from err
+    except asyncio.TimeoutError as err:
+        raise ConfigEntryNotReady(f"Timed out while connecting to {name}") from err
+        
 
 
 class SSHSensor(TemplateSensor):
