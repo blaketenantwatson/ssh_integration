@@ -24,6 +24,7 @@ from homeassistant.const import (
     CONF_DEVICE_CLASS,
     CONF_SCAN_INTERVAL,
     CONF_FRIENDLY_NAME,
+    CONF_PASSWORD,
 )
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
@@ -60,6 +61,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_COMMAND): cv.string,
         vol.Optional(CONF_UNIQUE_ID): cv.string,
         vol.Optional(CONF_FRIENDLY_NAME): cv.string,
+        vol.Optional(CONF_PASSWORD): cv.string,
     }
 ).extend(TEMPLATE_SENSOR_BASE_SCHEMA.schema)
 
@@ -100,6 +102,7 @@ async def async_setup_platform(
     username: str = sensor_config.get(CONF_USERNAME)
     key: str = sensor_config.get(CONF_KEY)
     port: int = sensor_config.get(CONF_PORT)
+    password: str = sensor_config.get(CONF_PASSWORD)
 
     data = SSHData(hass,
         command,
@@ -108,6 +111,7 @@ async def async_setup_platform(
         username,
         key,
         port,
+        password,
     )
 
     trigger_entity_config = {
@@ -211,6 +215,7 @@ class SSHData:
         username: str,
         key: str,
         port: int,
+        password: str,
     ) -> None:
         """Initialize the data object"""
         self.value: str | None = None
@@ -223,18 +228,23 @@ class SSHData:
         self._key = key
         self._ssh = None
         self._username = username
+        self._password = password
 
         # Create ssh private key
-        try:
-            self._ssh_key = paramiko.Ed25519Key.from_private_key_file(self._key)
-        except FileNotFoundError as err:
-            _LOGGER.error("SSH Key Not Found...")
+        if not self._password: # Using private key instead of password
+            try:
+                self._ssh_key = paramiko.Ed25519Key.from_private_key_file(self._key)
+            except FileNotFoundError as err:
+                _LOGGER.error("SSH Key Not Found...")
 
     def _connect(self):
         try:
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(self._host, port=self._port, username=self._username, pkey=self._ssh_key)
+            if self._password: # Password provided, use this instead of the private key
+                client.connect(self._host, port=self._port, username=self._username, password=self._password)
+            else: # Use private key instead
+                client.connect(self._host, port=self._port, username=self._username, pkey=self._ssh_key)
             self._ssh = client
             self._connected = True
         except Exception as err:

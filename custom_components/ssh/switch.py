@@ -29,6 +29,7 @@ from homeassistant.const import (
     CONF_HOST,
     CONF_PORT,
     CONF_USERNAME,
+    CONF_PASSWORD,
 )
 
 from homeassistant.core import HomeAssistant
@@ -65,6 +66,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_USERNAME): cv.string,
         vol.Optional(CONF_KEY, default=DEFAULT_KEY): cv.string,
+        vol.Optional(CONF_PASSWORD): cv.string,
     }
 )#.extend()
 
@@ -105,6 +107,7 @@ async def async_setup_platform(
     username: str = switch_config.get(CONF_USERNAME)
     key: str = switch_config.get(CONF_KEY)
     scan_interval: timedelta = switch_config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    password: str = switch_config.get(CONF_PASSWORD)
 
     data = SSHData(
         hass,
@@ -116,6 +119,7 @@ async def async_setup_platform(
         username,
         key,
         port,
+        password,
     )
 
     trigger_entity_config = {
@@ -257,6 +261,7 @@ class SSHData:
         username: str,
         key: str,
         port: int,
+        password: str,
     ) -> None:
         self.value: str | None = None
         self.hass: HomeAssistant = hass
@@ -271,17 +276,22 @@ class SSHData:
         self._timeout = command_timeout
         self._switch_state = True
         self._connected = False
+        self._password = password
 
-        try:
-            self._ssh_key = paramiko.Ed25519Key.from_private_key_file(self._key)
-        except FileNotFoundError as err:
-            _LOGGER.error("SSH Key Not Found")
+        if not self._password: # Using private key instead of password
+            try:
+                self._ssh_key = paramiko.Ed25519Key.from_private_key_file(self._key)
+            except FileNotFoundError as err:
+                _LOGGER.error("SSH Key Not Found")
         
     def _connect(self):
         try:
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(self._host, port=self._port, username=self._username, pkey=self._ssh_key)
+            if self._password: # Using provided password
+                client.connect(self._host, port=self._port, username=self._username, password=self._password)
+            else: # Using private key
+                client.connect(self._host, port=self._port, username=self._username, pkey=self._ssh_key)
             self._ssh = client
             self._connected = True
         except Exception as err:
