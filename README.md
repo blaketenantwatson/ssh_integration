@@ -101,6 +101,10 @@ switch:
 
 (string)(Optional) Path to stored ssh key file. Should be of format `/config/path_to_key/key`
 
+**password**
+
+(string)(Optional) SSH Password. Will override key if provided, so do NOT provide both.
+
 
 **Sensor**
 ```yaml
@@ -148,8 +152,11 @@ sensor:
 
 (string)(Required) Unique ID for switch. Required for all switches.
 
+**password**
+
+(string)(Optional) SSH Password. Will override key if provided, so do NOT provide both.
+
 ## Future Updates
 ```
-- Add support for password authentication instead of key-based auth.
 - Add the same options for sensor as there is for switch. Not necessary, but nice for continuity.
 ```
