@@ -21,7 +21,6 @@ from homeassistant.const import (
     CONF_COMMAND_ON,
     CONF_COMMAND_STATE,
     CONF_FRIENDLY_NAME,
-    CONF_ICON_TEMPLATE,
     CONF_NAME,
     CONF_SCAN_INTERVAL,
     CONF_UNIQUE_ID,
@@ -59,7 +58,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_COMMAND_STATE): cv.string,
         vol.Optional(CONF_FRIENDLY_NAME): cv.string,
         vol.Optional(CONF_VALUE_TEMPLATE): cv.template,
-        vol.Optional(CONF_ICON_TEMPLATE): cv.template,
         vol.Optional(CONF_COMMAND_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
         vol.Required(CONF_UNIQUE_ID): cv.string,
         vol.Optional(CONF_HOST): cv.string,
@@ -99,7 +97,6 @@ async def async_setup_platform(
     value_template: Template = switch_config.get(CONF_VALUE_TEMPLATE)
     if value_template:
         value_template.hass = hass
-    icon_template: Template = switch_config.get(CONF_ICON_TEMPLATE)
     command_timeout: int = switch_config.get(CONF_COMMAND_TIMEOUT)
     unique_id: str = switch_config.get(CONF_UNIQUE_ID)
     host: str = switch_config.get(CONF_HOST)
@@ -208,7 +205,6 @@ class SSHSwitch(TemplateEntity, SwitchEntity):
 
         else:
             return
-            _LOGGER.warning("Switch Updates Blocked")
     
     async def async_update(self) -> None:
         await self._update_entity_state()
@@ -216,23 +212,35 @@ class SSHSwitch(TemplateEntity, SwitchEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on"""
         await self.hass.async_add_executor_job(self.data.turn_on)
-        value = self.data.value # TODO: Do something with this
 
         self._attr_is_on = True
 
-        # TODO: Implement value templating
-        self._attr_native_value = self.data.value
+        if self._value_template:
+            self._attr_native_value = (
+                self._value_template.async_render_with_possible_json_value(
+                    self.data.value,
+                    None
+                )
+            )
+        else: # No template provided
+            self._attr_native_value = self.data.value
 
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         await self.hass.async_add_executor_job(self.data.turn_off)
-        value = self.data.value # TODO: Do something with this
 
         self._attr_is_on = False
 
-        # TODO: Implement value templating
-        self._attr_native_value = self.data.value
+        if self._value_template:
+            self._attr_native_value = (
+                self._value_template.async_render_with_possible_json_value(
+                    self.data.value,
+                    None
+                )
+            )
+        else: # No template provided
+            self._attr_native_value = self.data.value
 
         self.async_write_ha_state()
 
@@ -294,13 +302,9 @@ class SSHData:
             if not self._connected:
                 self._connect()
 
-            stdin, stdout, stderr = self._ssh.exec_command(self._command_state, self._timeout)
+            _, stdout, _ = self._ssh.exec_command(self._command_state, self._timeout)
 
-            value = ''
-            for line in stdout:
-                value = line.strip('\n')
-
-            self.value = value
+            self.value = stdout.read().decode()
         except Exception as err:
             _LOGGER.error(f"Generic SSH Error: {str(err)}")
 

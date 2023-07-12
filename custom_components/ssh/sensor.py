@@ -1,18 +1,14 @@
 import logging
 import voluptuous as vol
 from datetime import timedelta
-import json
 import asyncio
 import paramiko
 from typing import Final
 
 from homeassistant.components.sensor import (
     CONF_STATE_CLASS,
-    DEVICE_CLASSES_SCHEMA,
     DOMAIN as SENSOR_DOMAIN,
     PLATFORM_SCHEMA,
-    STATE_CLASSES_SCHEMA,
-    SensorEntity,
     SensorStateClass
 )
 
@@ -23,11 +19,11 @@ from homeassistant.const import (
     CONF_USERNAME,
     CONF_VALUE_TEMPLATE,
     CONF_UNIT_OF_MEASUREMENT,
-    STATE_UNKNOWN,
     CONF_NAME,
     CONF_COMMAND,
     CONF_DEVICE_CLASS,
-    CONF_SCAN_INTERVAL
+    CONF_SCAN_INTERVAL,
+    CONF_FRIENDLY_NAME,
 )
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
@@ -63,6 +59,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_KEY, default=DEFAULT_KEY): cv.string,
         vol.Optional(CONF_COMMAND): cv.string,
         vol.Optional(CONF_UNIQUE_ID): cv.string,
+        vol.Optional(CONF_FRIENDLY_NAME): cv.string,
     }
 ).extend(TEMPLATE_SENSOR_BASE_SCHEMA.schema)
 
@@ -89,7 +86,7 @@ async def async_setup_platform(
     if discovery_info:
         sensor_config = discovery_info
     
-    name: str = sensor_config[CONF_NAME]
+    name: str = sensor_config.get(CONF_NAME) or sensor_config.get(CONF_FRIENDLY_NAME)
     command: str = sensor_config[CONF_COMMAND]
     unit: str | None = sensor_config.get(CONF_UNIT_OF_MEASUREMENT)
     value_template: Template | None = sensor_config.get(CONF_VALUE_TEMPLATE)
@@ -102,13 +99,16 @@ async def async_setup_platform(
     host: str = sensor_config.get(CONF_HOST)
     username: str = sensor_config.get(CONF_USERNAME)
     key: str = sensor_config.get(CONF_KEY)
+    port: int = sensor_config.get(CONF_PORT)
 
     data = SSHData(hass,
         command,
         command_timeout,
         host,
         username,
-        key)
+        key,
+        port,
+    )
 
     trigger_entity_config = {
         CONF_UNIQUE_ID: unique_id,
@@ -182,25 +182,22 @@ class SSHSensor(TemplateSensor):
         if self._run_updates:
             asyncio.create_task(asyncio.to_thread(self.async_update))
             await self.hass.async_add_executor_job(self.data.update)
-            value = self.data.value
             self.async_write_ha_state()
         else:
             return
-            _LOGGER.warning("Updates Blocked")
 
     async def async_update(self) -> None:
         await self.hass.async_add_executor_job(self.data.update)
-        value = self.data.value
 
         if self._value_template:
             self._attr_native_value = (
                 self._value_template.async_render_with_possible_json_value(
-                    value,
+                    self.data.value,
                     None,
                 )
             )
         else: # No template provided
-            self._attr_native_value = value
+            self._attr_native_value = self.data.value
 
         self.async_write_ha_state()
 
@@ -212,7 +209,8 @@ class SSHData:
         command_timeout: int,
         host: str,
         username: str,
-        key: str
+        key: str,
+        port: int,
     ) -> None:
         """Initialize the data object"""
         self.value: str | None = None
@@ -220,6 +218,7 @@ class SSHData:
         self.command = command
         self.timeout = command_timeout
         self._host = host
+        self._port = port
         self._connected = False
         self._key = key
         self._ssh = None
@@ -235,7 +234,7 @@ class SSHData:
         try:
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(self._host, username=self._username, pkey=self._ssh_key)
+            client.connect(self._host, port=self._port, username=self._username, pkey=self._ssh_key)
             self._ssh = client
             self._connected = True
         except Exception as err:
@@ -259,13 +258,9 @@ class SSHData:
 
             # NOTE: There are some cases where we still haven't connected at this point
             #       Because the scan interval is small, it will just fail to fetch once, and catch on the next cycle
-            stdin, stdout, stderr = self._ssh.exec_command(self.command, self.timeout)
+            _, stdout, _ = self._ssh.exec_command(self.command, self.timeout)
             
-            value = ''
-            for line in stdout:
-                value = line.strip('\n')
-
-            self.value = value
+            self.value = stdout.read().decode()
         except Exception as err:
             _LOGGER.error(f"Failed to Update SSH Error: {str(err)}")
         
