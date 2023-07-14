@@ -7,7 +7,6 @@ from typing import Final
 
 from homeassistant.components.sensor import (
     CONF_STATE_CLASS,
-    DOMAIN as SENSOR_DOMAIN,
     PLATFORM_SCHEMA,
     SensorStateClass
 )
@@ -36,7 +35,6 @@ from homeassistant.helpers.template_entity import (
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue
 from homeassistant.exceptions import PlatformNotReady, AuthFailed, ConfigEntryAuthFailed, ConfigEntryNotReady
 
 _LOGGER = logging.getLogger(__name__)

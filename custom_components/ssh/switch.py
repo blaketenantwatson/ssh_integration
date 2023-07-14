@@ -10,7 +10,6 @@ from typing import Final
 import voluptuous as vol
 
 from homeassistant.components.switch import (
-    DOMAIN as SWITCH_DOMAIN,
     ENTITY_ID_FORMAT,
     PLATFORM_SCHEMA,
     SwitchEntity,
@@ -36,7 +35,6 @@ from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.template_entity import TemplateEntity
