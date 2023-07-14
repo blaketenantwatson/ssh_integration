@@ -80,16 +80,7 @@ async def async_setup_platform(
     """Set up the SSH Switch"""
     if switch_config := config:
         # Deprecated Yaml Issue Catch
-        async_create_issue(
-            hass,
-            SWITCH_DOMAIN,
-            "deprecated_yaml_switch",
-            breaks_in_ha_version="2023.12.0",
-            is_fixable=False,
-            severity=IssueSeverity.WARNING,
-            translation_key="deprecated_platform_yaml",
-            translation_placeholders={"platform": SWITCH_DOMAIN}
-        )
+        pass
     if discovery_info:
         switch_config = discovery_info
 

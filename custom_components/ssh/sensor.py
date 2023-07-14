@@ -76,16 +76,7 @@ async def async_setup_platform(
     """Set up the SSH Sensor"""
     if sensor_config := config:
         # Deprecated Yaml Issue Catch
-        async_create_issue(
-            hass,
-            SENSOR_DOMAIN,
-            "deprecated_yaml_sensor",
-            breaks_in_ha_version="2023.12.0",
-            is_fixable=False,
-            severity=IssueSeverity.WARNING,
-            translation_key="deprecated_platform_yaml",
-            translation_placeholders={"platform": SENSOR_DOMAIN}
-        )
+        pass
     if discovery_info:
         sensor_config = discovery_info
     
