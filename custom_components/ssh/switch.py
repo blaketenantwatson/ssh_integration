@@ -38,6 +38,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.template_entity import TemplateEntity
+from homeassistant.exceptions import PlatformNotReady, ConfigEntryAuthFailed, ConfigEntryNotReady
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -116,22 +117,29 @@ async def async_setup_platform(
         CONF_NAME: Template(name, hass),
     }
 
-    async_add_entities(
-        [
-            SSHSwitch(
-                hass,
-                trigger_entity_config,
-                unique_id,
-                command_on,
-                command_off,
-                command_state,
-                value_template,
-                command_timeout,
-                scan_interval,
-                data,
-            )
-        ]
-    )
+    try:
+        async_add_entities(
+            [
+                SSHSwitch(
+                    hass,
+                    trigger_entity_config,
+                    unique_id,
+                    command_on,
+                    command_off,
+                    command_state,
+                    value_template,
+                    command_timeout,
+                    scan_interval,
+                    data,
+                )
+            ]
+        )
+    except ConnectionError as err:
+        raise PlatformNotReady(f"Connection error while connecting to {name}") from err
+    except ConfigEntryAuthFailed as err:
+        raise ConfigEntryAuthFailed(f"Credentials invalid for {name}") from err
+    except asyncio.TimeoutError as err:
+        raise ConfigEntryNotReady(f"Timed otu while connecting to {name}") from err
 
 
 class SSHSwitch(TemplateEntity, SwitchEntity):

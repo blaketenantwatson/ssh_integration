@@ -35,7 +35,7 @@ from homeassistant.helpers.template_entity import (
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.template import Template
 from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.exceptions import PlatformNotReady, AuthFailed, ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.exceptions import PlatformNotReady, ConfigEntryAuthFailed, ConfigEntryNotReady
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ async def async_setup_platform(
         )
     except ConnectionError as err:
         raise PlatformNotReady(f"Connection error while connecting to {name}") from err
-    except AuthFailed as err:
+    except ConfigEntryAuthFailed as err:
         raise ConfigEntryAuthFailed(f"Credentials invalid for {name}") from err
     except asyncio.TimeoutError as err:
         raise ConfigEntryNotReady(f"Timed out while connecting to {name}") from err
